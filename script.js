@@ -4,12 +4,13 @@ let user = {
     streak: 0,
     avatar: "🌱",
     achievements: 0,
-    lastVisit: null,
     ownedItems: ["🌱"]
 };
 
 let tasks = [];
 let taskIdCounter = 1;
+let currentFilter = 'all';
+let searchTerm = '';
 
 const shopItems = [
     { emoji: "⏰", name: "منبه", price: 30, id: "emoji1" },
@@ -23,9 +24,9 @@ const shopItems = [
 ];
 
 let dailyChallenges = [
-    { name: "🔥 أنجزي 3 مهام قبل الظهر", completed: false, points: 30 },
-    { name: "⭐ أنجزي 5 مهام متتالية", completed: false, points: 50 },
-    { name: "💫 أكمل مهمة بعد منتصف الليل", completed: false, points: 40 }
+    { name: "🔥 3 مهام قبل الظهر", completed: false, points: 30 },
+    { name: "⭐ 5 مهام متتالية", completed: false, points: 50 },
+    { name: "💫 مهمة بعد منتصف الليل", completed: false, points: 40 }
 ];
 
 const levelQuotes = {
@@ -37,226 +38,144 @@ const levelQuotes = {
 };
 
 const levelAvatars = {
-    1: "🌱",
-    2: "🌿",
-    3: "🌳",
-    4: "👑",
-    5: "🔥"
+    1: "🌱", 2: "🌿", 3: "🌳", 4: "👑", 5: "🔥"
 };
+
+const levelNames = ["مبتدئ", "نشيطة", "بطلة", "أسطورة", "خارقة"];
+const levelPoints = [0, 50, 150, 300, 500];
 
 function showMessage(msg) {
     let msgBox = document.getElementById('progressMessage');
     msgBox.textContent = msg;
     msgBox.style.display = 'block';
-    setTimeout(function() {
-        msgBox.style.display = 'none';
-    }, 3000);
-}
-
-function checkStreak() {
-    let today = new Date().toDateString();
-    let lastVisit = localStorage.getItem('taskquest_lastVisit');
-    
-    if (lastVisit === today) {
-        return;
-    }
-    
-    if (lastVisit) {
-        let lastDate = new Date(lastVisit);
-        let yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (lastDate.toDateString() === yesterday.toDateString()) {
-            user.streak++;
-            if (user.streak === 7) {
-                showMessage("✨ أسبوع كامل من الإنجاز! فخورة فيج ✨");
-            }
-        } else {
-            user.streak = 1;
-            showMessage("🔄 بداية سلسلة جديدة ... شدي حيلج!");
-        }
-    } else {
-        user.streak = 1;
-    }
-    
-    localStorage.setItem('taskquest_lastVisit', today);
-    updateUI();
+    setTimeout(() => msgBox.style.display = 'none', 2000);
 }
 
 function updateLevel() {
     let oldLevel = user.level;
-    
-    if (user.points >= 500) {
-        user.level = 5;
-    } else if (user.points >= 300) {
-        user.level = 4;
-    } else if (user.points >= 150) {
-        user.level = 3;
-    } else if (user.points >= 50) {
-        user.level = 2;
-    } else {
-        user.level = 1;
-    }
+    if (user.points >= 500) user.level = 5;
+    else if (user.points >= 300) user.level = 4;
+    else if (user.points >= 150) user.level = 3;
+    else if (user.points >= 50) user.level = 2;
+    else user.level = 1;
 
     if (user.level > oldLevel) {
-        showMessage(`🎉 مبروك! ترقيتي للمستوى ${user.level} 🎉`);
+        showMessage(`🎉 ترقيتي للمستوى ${user.level}!`);
         if (!user.ownedItems.includes(levelAvatars[user.level])) {
             user.ownedItems.push(levelAvatars[user.level]);
         }
     }
 
-    document.body.className = '';
-    document.body.classList.add(`level-${user.level}`);
-
-    let levelNames = ["مبتدئ", "نشيطة", "بطلة", "أسطورة", "خارقة"];
-    document.getElementById('levelDisplay').textContent = `مستوى ${user.level} - ${levelNames[user.level-1]}`;
+    document.body.className = `level-${user.level}`;
+    document.getElementById('levelDisplay').textContent = `مستوى ${user.level}`;
     document.getElementById('motivationQuote').textContent = levelQuotes[user.level];
 }
 
-function addTask() {
-    let taskName = document.getElementById('taskNameInput').value;
-    let taskPoints = parseInt(document.getElementById('taskPointsSelect').value);
+function updateProgressBar() {
+    let currentLevelPoints = levelPoints[user.level - 1];
+    let nextLevelPoints = user.level < 5 ? levelPoints[user.level] : levelPoints[user.level - 1];
+    let progressPercent = user.level < 5 ? ((user.points - currentLevelPoints) / (nextLevelPoints - currentLevelPoints)) * 100 : 100;
+    progressPercent = Math.min(100, Math.max(0, progressPercent));
+    
+    document.getElementById('levelProgressBar').style.width = `${progressPercent}%`;
+    document.getElementById('progressPercent').textContent = `${Math.round(progressPercent)}%`;
+    
+    if (user.level < 5) {
+        document.getElementById('nextLevelInfo').textContent = `${nextLevelPoints - user.points} نقطة للمستوى التالي`;
+    } else {
+        document.getElementById('nextLevelInfo').textContent = 'أقصى مستوى!';
+    }
+}
 
+function addTask() {
+    let taskName = document.getElementById('taskNameInput').value.trim();
     if (!taskName) {
         alert('دخلي اسم المهمة');
         return;
     }
 
-    let task = {
+    tasks.push({
         id: taskIdCounter++,
         name: taskName,
-        points: taskPoints,
+        points: parseInt(document.getElementById('taskPointsSelect').value),
+        category: document.getElementById('taskCategory').value,
         completed: false
-    };
+    });
 
-    tasks.push(task);
     document.getElementById('taskNameInput').value = '';
-    showMessage("✅ تمت إضافة المهمة! شدي حيلج");
+    showMessage("✅ تمت الإضافة");
     updateUI();
 }
 
 function completeTask(taskId) {
-    for (let i = 0; i < tasks.length; i++) {
-        if (tasks[i].id === taskId && !tasks[i].completed) {
-            tasks[i].completed = true;
-            user.points += tasks[i].points;
-            
-            showMessage(`🎯 مبروك! +${tasks[i].points} نقطة`);
-            
-            let completedCount = 0;
-            for (let j = 0; j < tasks.length; j++) {
-                if (tasks[j].completed) completedCount++;
-            }
-            
-            if (completedCount === 5) {
-                user.achievements++;
-                showMessage("🏅 أنجزتي 5 مهام! أول إنجاز");
-            }
-            if (completedCount === 10) {
-                user.achievements++;
-                showMessage("⭐ 10 مهام! طموحج عالي");
-            }
-            if (completedCount === 25) {
-                user.achievements++;
-                showMessage("💫 25 مهمة! شكد أنتِ ملهمة");
-            }
-
-            checkDailyChallenges();
-            updateLevel();
-            updateUI();
-            break;
-        }
+    let task = tasks.find(t => t.id === taskId);
+    if (task && !task.completed) {
+        task.completed = true;
+        user.points += task.points;
+        showMessage(`🎯 +${task.points} نقطة`);
+        
+        let completedCount = tasks.filter(t => t.completed).length;
+        if (completedCount === 5) { user.achievements++; showMessage("🏅 5 مهام!"); }
+        if (completedCount === 10) { user.achievements++; showMessage("⭐ 10 مهام!"); }
+        if (completedCount === 25) { user.achievements++; showMessage("💫 25 مهمة!"); }
+        
+        checkChallenges();
+        updateLevel();
+        updateUI();
     }
 }
 
 function deleteTask(taskId) {
-    let newTasks = [];
-    for (let i = 0; i < tasks.length; i++) {
-        if (tasks[i].id !== taskId) {
-            newTasks.push(tasks[i]);
-        }
-    }
-    tasks = newTasks;
-    showMessage("🗑️ تم حذف المهمة");
+    tasks = tasks.filter(t => t.id !== taskId);
+    showMessage("🗑️ تم الحذف");
     updateUI();
 }
 
-function checkDailyChallenges() {
-    let completedTasks = 0;
-    for (let i = 0; i < tasks.length; i++) {
-        if (tasks[i].completed) completedTasks++;
-    }
-
-    if (completedTasks >= 3 && !dailyChallenges[0].completed) {
+function checkChallenges() {
+    let completedCount = tasks.filter(t => t.completed).length;
+    if (completedCount >= 3 && !dailyChallenges[0].completed) {
         dailyChallenges[0].completed = true;
-        user.points += dailyChallenges[0].points;
+        user.points += 30;
         user.achievements++;
-        showMessage("🔥 تحدي 3 مهام قبل الظهر! مبروك");
     }
-
-    let consecutiveCount = 0;
-    for (let i = 0; i < tasks.length; i++) {
-        if (tasks[i].completed) {
-            consecutiveCount++;
-            if (consecutiveCount >= 5 && !dailyChallenges[1].completed) {
-                dailyChallenges[1].completed = true;
-                user.points += dailyChallenges[1].points;
-                user.achievements++;
-                showMessage("⭐ 5 مهام متتالية! إرادة قوية");
-                break;
-            }
-        } else {
-            consecutiveCount = 0;
-        }
-    }
-
-    let now = new Date();
-    if (now.getHours() >= 0 && now.getHours() < 6) {
-        for (let i = 0; i < tasks.length; i++) {
-            if (tasks[i].completed && !dailyChallenges[2].completed) {
-                dailyChallenges[2].completed = true;
-                user.points += dailyChallenges[2].points;
-                user.achievements++;
-                showMessage("💫 مبروك! أنجزتي مهمة بالليل");
-                break;
-            }
+    
+    let consecutive = 0;
+    for (let t of tasks) {
+        if (t.completed) consecutive++;
+        else consecutive = 0;
+        if (consecutive >= 5 && !dailyChallenges[1].completed) {
+            dailyChallenges[1].completed = true;
+            user.points += 50;
+            user.achievements++;
+            break;
         }
     }
 }
 
 function buyItem(itemId) {
-    let item = null;
-    for (let i = 0; i < shopItems.length; i++) {
-        if (shopItems[i].id === itemId) {
-            item = shopItems[i];
-            break;
-        }
-    }
-
+    let item = shopItems.find(i => i.id === itemId);
     if (!item) return;
-
-    if (user.points >= item.price) {
-        let alreadyOwned = false;
-        for (let i = 0; i < user.ownedItems.length; i++) {
-            if (user.ownedItems[i] === item.emoji) {
-                alreadyOwned = true;
-                break;
-            }
-        }
-
-        if (!alreadyOwned) {
-            user.points -= item.price;
-            user.ownedItems.push(item.emoji);
-            user.avatar = item.emoji;
-            document.getElementById('avatarEmoji').textContent = user.avatar;
-            showMessage(`🛒 اشتريتي ${item.name}! شكلج حلو`);
-            updateUI();
-        } else {
-            showMessage("✅ عندج هالإيموجي مسبقاً");
-        }
+    
+    if (user.points >= item.price && !user.ownedItems.includes(item.emoji)) {
+        user.points -= item.price;
+        user.ownedItems.push(item.emoji);
+        user.avatar = item.emoji;
+        document.getElementById('avatarEmoji').textContent = user.avatar;
+        showMessage(`🛒 اشتريتي ${item.name}`);
+        updateUI();
+    } else if (user.ownedItems.includes(item.emoji)) {
+        showMessage("✅ عندج مسبقاً");
     } else {
-        showMessage("💔 ما عندج نقاط كافية .. شدي حيلج");
+        showMessage(`💔 يحتاج ${item.price - user.points} نقطة`);
     }
+}
+
+function filterTasks() {
+    let filtered = tasks;
+    if (currentFilter === 'active') filtered = filtered.filter(t => !t.completed);
+    else if (currentFilter === 'completed') filtered = filtered.filter(t => t.completed);
+    if (searchTerm) filtered = filtered.filter(t => t.name.includes(searchTerm));
+    return filtered;
 }
 
 function updateUI() {
@@ -264,124 +183,86 @@ function updateUI() {
     document.getElementById('streakDisplay').textContent = user.streak;
     document.getElementById('avatarEmoji').textContent = user.avatar;
     
-    let completedCount = 0;
-    for (let i = 0; i < tasks.length; i++) {
-        if (tasks[i].completed) completedCount++;
-    }
-    document.getElementById('tasksCount').textContent = `${completedCount}/${tasks.length}`;
+    let completed = tasks.filter(t => t.completed).length;
+    document.getElementById('tasksCount').textContent = `${completed}/${tasks.length}`;
     document.getElementById('achievementsCount').textContent = user.achievements;
+    
+    updateProgressBar();
 
     let tasksList = document.getElementById('tasksList');
     tasksList.innerHTML = '';
     
-    for (let i = 0; i < tasks.length; i++) {
-        let task = tasks[i];
-        let taskDiv = document.createElement('div');
-        taskDiv.className = `task-item ${task.completed ? 'completed' : ''}`;
-        
-        taskDiv.innerHTML = `
-            <div class="task-info">
-                <span>${task.name}</span>
-                <span class="task-points">${task.points} نقطة</span>
-            </div>
-            <div>
-                ${!task.completed ? `<span class="complete-btn" onclick="completeTask(${task.id})">إنجاز</span>` : ''}
-                <span class="delete-btn" onclick="deleteTask(${task.id})">❌</span>
-            </div>
-        `;
-        
-        tasksList.appendChild(taskDiv);
+    if (tasks.length === 0) {
+        tasksList.innerHTML = '<div class="task-item" style="justify-content:center">✨ أضيفي أول مهمة ✨</div>';
+    } else {
+        filterTasks().forEach(task => {
+            let div = document.createElement('div');
+            div.className = `task-item ${task.completed ? 'completed' : ''}`;
+            div.innerHTML = `
+                <div class="task-info">
+                    <span class="task-name">${task.name}</span>
+                    <span class="task-category">${task.category}</span>
+                    <span class="task-points">${task.points}</span>
+                </div>
+                <div class="task-actions">
+                    ${!task.completed ? `<button class="complete-btn" onclick="completeTask(${task.id})">✓</button>` : ''}
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">✗</button>
+                </div>
+            `;
+            tasksList.appendChild(div);
+        });
     }
 
     let challengesDiv = document.getElementById('dailyChallenges');
     challengesDiv.innerHTML = '';
-    
-    for (let i = 0; i < dailyChallenges.length; i++) {
-        let challenge = dailyChallenges[i];
-        let challengeDiv = document.createElement('div');
-        challengeDiv.className = 'challenge-item';
-        challengeDiv.style.background = challenge.completed ? 'rgba(0,255,0,0.2)' : 'rgba(255,0,0,0.2)';
-        challengeDiv.style.borderColor = challenge.completed ? '#4CAF50' : '#ff4444';
-        
-        challengeDiv.innerHTML = `
-            <span>${challenge.name}</span>
-            <span>${challenge.completed ? '✅' : `${challenge.points} نقطة`}</span>
-        `;
-        
-        challengesDiv.appendChild(challengeDiv);
-    }
+    dailyChallenges.forEach(c => {
+        let div = document.createElement('div');
+        div.className = `challenge-item ${c.completed ? 'completed' : ''}`;
+        div.innerHTML = `<span>${c.name}</span><span>${c.completed ? '✅' : c.points}</span>`;
+        challengesDiv.appendChild(div);
+    });
 
-    let shopDivs = document.querySelectorAll('.shop-item');
-    for (let i = 0; i < shopDivs.length; i++) {
-        let item = shopDivs[i];
-        
-        let owned = false;
-        for (let j = 0; j < user.ownedItems.length; j++) {
-            if (user.ownedItems[j] === shopItems[i].emoji) {
-                owned = true;
-                break;
-            }
-        }
-        
-        if (owned) {
+    document.querySelectorAll('.shop-item').forEach((item, i) => {
+        if (user.ownedItems.includes(shopItems[i].emoji)) {
             item.classList.add('disabled');
         } else {
             item.classList.remove('disabled');
         }
-    }
-}
-
-document.getElementById('addTaskBtn').addEventListener('click', addTask);
-
-document.getElementById('taskNameInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        addTask();
-    }
-});
-
-document.getElementById('avatarEmoji').addEventListener('click', function() {
-    let nextAvatar = 0;
-    for (let i = 0; i < user.ownedItems.length; i++) {
-        if (user.ownedItems[i] === user.avatar) {
-            nextAvatar = (i + 1) % user.ownedItems.length;
-            break;
-        }
-    }
-    user.avatar = user.ownedItems[nextAvatar];
-    document.getElementById('avatarEmoji').textContent = user.avatar;
-    showMessage("✨ غيرتي شكلج! حلو");
-});
-
-let shopItemElements = document.querySelectorAll('.shop-item');
-for (let i = 0; i < shopItemElements.length; i++) {
-    shopItemElements[i].addEventListener('click', function() {
-        let itemId = this.getAttribute('data-item');
-        buyItem(itemId);
     });
 }
 
-let savedTasks = localStorage.getItem('taskquest_tasks');
-if (savedTasks) {
-    tasks = JSON.parse(savedTasks);
-    taskIdCounter = tasks.length + 1;
-}
+document.getElementById('addTaskBtn').addEventListener('click', addTask);
+document.getElementById('taskNameInput').addEventListener('keypress', (e) => e.key === 'Enter' && addTask());
+document.getElementById('taskFilter').addEventListener('change', (e) => { currentFilter = e.target.value; updateUI(); });
+document.getElementById('taskSearch').addEventListener('input', (e) => { searchTerm = e.target.value; updateUI(); });
 
-let savedUser = localStorage.getItem('taskquest_user');
-if (savedUser) {
-    let parsed = JSON.parse(savedUser);
-    user.points = parsed.points || 0;
-    user.level = parsed.level || 1;
-    user.streak = parsed.streak || 0;
-    user.avatar = parsed.avatar || "🌱";
-    user.achievements = parsed.achievements || 0;
-    user.ownedItems = parsed.ownedItems || ["🌱"];
-}
+document.getElementById('avatarEmoji').addEventListener('click', () => {
+    if (user.ownedItems.length > 1) {
+        let current = user.ownedItems.indexOf(user.avatar);
+        user.avatar = user.ownedItems[(current + 1) % user.ownedItems.length];
+        document.getElementById('avatarEmoji').textContent = user.avatar;
+        showMessage("✨ غيرتي شكلج");
+    }
+});
 
-checkStreak();
+document.querySelectorAll('.shop-item').forEach((item, i) => {
+    item.addEventListener('click', () => buyItem(shopItems[i].id));
+});
+
+try {
+    let savedTasks = localStorage.getItem('tasks');
+    let savedUser = localStorage.getItem('user');
+    if (savedTasks) { tasks = JSON.parse(savedTasks); taskIdCounter = tasks.length + 1; }
+    if (savedUser) { 
+        let u = JSON.parse(savedUser);
+        user = { ...user, ...u };
+    }
+} catch (e) {}
+
 updateLevel();
 updateUI();
 
-setInterval(function() {
-    localStorage.setItem('taskquest_tasks', JSON.stringify(tasks));
-    localStorage.setItem('taskquest_user', JSON.stringify(user));
-}, 5000);
+setInterval(() => {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    localStorage.setItem('user', JSON.stringify(user));
+}, 3000);
