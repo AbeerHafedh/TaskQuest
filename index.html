@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskQuest - رحلة إنجازج</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="level-1">
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>⚔️ TaskQuest ⚔️</h1>
+                <div class="avatar-section">
+                    <span id="avatarEmoji">🌱</span>
+                    <span class="level-badge" id="levelDisplay">مستوى 1 - مبتدئ</span>
+                </div>
+            </div>
+            
+            <div class="quote-box" id="motivationQuote">
+                "كل رحلة تبدأ بخطوة" 👣
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div>النقاط</div>
+                    <div class="stat-value" id="pointsDisplay">0</div>
+                </div>
+                <div class="stat-card">
+                    <div>🔥 السلسلة</div>
+                    <div class="stat-value" id="streakDisplay">0</div>
+                </div>
+                <div class="stat-card">
+                    <div>المهام</div>
+                    <div class="stat-value" id="tasksCount">0/0</div>
+                </div>
+                <div class="stat-card">
+                    <div>🏆 الإنجازات</div>
+                    <div class="stat-value" id="achievementsCount">0</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="shop-section">
+            <h2>🛒 متجر الأفاتار</h2>
+            <div class="shop-items" id="shopItems">
+                <div class="shop-item" data-item="emoji1" data-price="30">
+                    <div class="shop-item-emoji">⏰</div>
+                    <div>منبه</div>
+                    <div class="shop-item-price">30 نقطة</div>
+                </div>
+                <div class="shop-item" data-item="emoji2" data-price="40">
+                    <div class="shop-item-emoji">📚</div>
+                    <div>كتب</div>
+                    <div class="shop-item-price">40 نقطة</div>
+                </div>
+                <div class="shop-item" data-item="emoji3" data-price="60">
+                    <div class="shop-item-emoji">💪</div>
+                    <div>قوة</div>
+                    <div class="shop-item-price">60 نقطة</div>
+                </div>
+                <div class="shop-item" data-item="emoji4" data-price="80">
+                    <div class="shop-item-emoji">🏆</div>
+                    <div>كأس</div>
+                    <div class="shop-item-price">80 نقطة</div>
+                </div>
+                <div class="shop-item" data-item="emoji5" data-price="100">
+                    <div class="shop-item-emoji">👑</div>
+                    <div>تاج</div>
+                    <div class="shop-item-price">100 نقطة</div>
+                </div>
+                <div class="shop-item" data-item="emoji6" data-price="120">
+                    <div class="shop-item-emoji">🔥</div>
+                    <div>لهب</div>
+                    <div class="shop-item-price">120 نقطة</div>
+                </div>
+                <div class="shop-item" data-item="emoji7" data-price="150">
+                    <div class="shop-item-emoji">🚀</div>
+                    <div>صاروخ</div>
+                    <div class="shop-item-price">150 نقطة</div>
+                </div>
+                <div class="shop-item" data-item="emoji8" data-price="200">
+                    <div class="shop-item-emoji">💎</div>
+                    <div>ألماسة</div>
+                    <div class="shop-item-price">200 نقطة</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="add-task-section">
+            <h2>➕ إضافة مهمة جديدة</h2>
+            <div class="add-task-form">
+                <input type="text" id="taskNameInput" placeholder="شنو تريدين تنجزين اليوم؟">
+                <select id="taskPointsSelect">
+                    <option value="10">🐣 سهل - 10 نقاط</option>
+                    <option value="20">⚡ متوسط - 20 نقطة</option>
+                    <option value="30">🔥 صعب - 30 نقطة</option>
+                    <option value="50">💀 تحدي - 50 نقطة</option>
+                </select>
+                <button id="addTaskBtn">إضافة</button>
+            </div>
+        </div>
+
+        <div class="challenges-section" id="challengesSection">
+            <h2>⚡ تحديات اليوم</h2>
+            <div id="dailyChallenges"></div>
+        </div>
+
+        <div class="tasks-section">
+            <h2>📋 مهاماتي</h2>
+            <div id="tasksList"></div>
+        </div>
+        
+        <div class="progress-message" id="progressMessage"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
